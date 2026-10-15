@@ -1,13 +1,13 @@
 # devin-resource-guard-mcp
 
-An enterprise-grade Model Context Protocol (MCP) server engineered specifically for autonomous desktop agents like **Cognition's Devin**. It operates via `stdio` to solve the two biggest operational bottlenecks facing production-level autonomous engineering pipelines: **Context Bloating** and **Out-of-Memory (OOM) agent crashes**.
+A Model Context Protocol (MCP) server for autonomous coding agents such as Devin, Cursor, and Claude Code. It runs over `stdio` and targets two common failure modes in long agent sessions: **context bloat** and **out-of-memory (OOM) crashes**.
 
-### 🚀 High-Leverage Agent Orchestration Features
+### Features
 
-*   **Proactive Resource Guardrails:** Continuously profiles memory, CPU, and disk headroom. It reads `/sys/fs/cgroup` (v1/v2) inside containers to intercept and warn agents *before* they get terminated by the Linux OOM killer or cgroup memory limits.
-*   **Workspace Context Optimization:** Scans workspaces to dynamically identify token-heavy, low-value artifacts (e.g., massive log files, dependency trees, binary builds, lockfiles). It outputs real-time `exclude_globs` configurations that prevent agents from bleeding tokens and blowing past context windows.
+*   **Resource headroom checks:** On each call, it reports memory, CPU, and disk headroom. Inside a container, it reads the cgroup memory limit from `/sys/fs/cgroup` (v1 and v2), so the numbers reflect the container rather than the host. When effective free memory falls below a threshold (500 MB by default), it returns a structured `NEAR_OOM_THRESHOLD` warning with recommended actions. The agent can then back off before the OOM killer or a cgroup limit ends its process.
+*   **Workspace context optimization:** It scans a workspace for token-heavy, low-value paths such as dependency trees, build output, large logs, binary artifacts, minified bundles, and lockfiles. It ranks them by estimated token cost and returns `exclude_globs` that keep them out of the agent's context.
 
-*Compatible out-of-the-box with Devin, Claude Desktop/Code, Cursor, and custom MCP clients.*
+*Works with any MCP client, including Devin, Claude Desktop, Claude Code, Cursor, and VS Code. This is an independent project, not affiliated with Cognition.*
 
 ---
 
@@ -103,8 +103,8 @@ The scanner reads `.gitignore`, `.cursorignore`, `.codeiumignore`, `.aiignore`, 
 **Requires Python 3.10+.**
 
 ```bash
-git clone https://github.com/<your-org>/devin-context-guard-mcp.git
-cd devin-context-guard-mcp
+git clone https://github.com/crona16/devin-resource-guard-mcp.git
+cd devin-resource-guard-mcp
 python -m venv .venv
 ```
 
@@ -145,8 +145,8 @@ npx @modelcontextprotocol/inspector .venv/bin/python server.py
 Every client below takes the same two things:
 
 1. **command:** the **absolute path** to the virtualenv's Python interpreter.
-   - macOS / Linux: `/abs/path/devin-context-guard-mcp/.venv/bin/python`
-   - Windows: `C:\\abs\\path\\devin-context-guard-mcp\\.venv\\Scripts\\python.exe`
+   - macOS / Linux: `/abs/path/devin-resource-guard-mcp/.venv/bin/python`
+   - Windows: `C:\\abs\\path\\devin-resource-guard-mcp\\.venv\\Scripts\\python.exe`
 2. **args:** the absolute path to `server.py`.
 
 > Use absolute paths. GUI apps don't inherit your shell's `PATH` or working directory, so a bare `python` often resolves to the wrong interpreter, one without `mcp` installed.
@@ -159,8 +159,8 @@ Edit `~/.cursor/mcp.json` to make the server available globally, or `.cursor/mcp
 {
   "mcpServers": {
     "context-guard": {
-      "command": "/abs/path/devin-context-guard-mcp/.venv/bin/python",
-      "args": ["/abs/path/devin-context-guard-mcp/server.py"],
+      "command": "/abs/path/devin-resource-guard-mcp/.venv/bin/python",
+      "args": ["/abs/path/devin-resource-guard-mcp/server.py"],
       "env": {
         "CONTEXT_GUARD_LOW_MEMORY_MB": "500"
       }
@@ -179,8 +179,8 @@ Add the server through Devin's MCP settings (**Settings → MCP servers → Add 
 |-----------|-----------------------------------------------------------|
 | Name      | `context-guard`                                           |
 | Transport | `stdio`                                                   |
-| Command   | `/abs/path/devin-context-guard-mcp/.venv/bin/python`      |
-| Arguments | `/abs/path/devin-context-guard-mcp/server.py`             |
+| Command   | `/abs/path/devin-resource-guard-mcp/.venv/bin/python`      |
+| Arguments | `/abs/path/devin-resource-guard-mcp/server.py`             |
 | Env       | `CONTEXT_GUARD_ALLOWED_ROOTS=/abs/path/to/your/repos` (optional) |
 
 If your Devin build accepts a JSON config instead, use the same `mcpServers` block as in the Cursor example. The exact menu path varies between Devin releases, so check Devin's MCP documentation if the menu items above don't match.
@@ -197,7 +197,7 @@ Add the same `mcpServers` block as in the Cursor example, then restart the app.
 ### Claude Code
 
 ```bash
-claude mcp add context-guard -- /abs/path/devin-context-guard-mcp/.venv/bin/python /abs/path/devin-context-guard-mcp/server.py
+claude mcp add context-guard -- /abs/path/devin-resource-guard-mcp/.venv/bin/python /abs/path/devin-resource-guard-mcp/server.py
 ```
 
 ### VS Code (Copilot agent mode)
@@ -209,8 +209,8 @@ Create `.vscode/mcp.json`:
   "servers": {
     "context-guard": {
       "type": "stdio",
-      "command": "${workspaceFolder}/../devin-context-guard-mcp/.venv/bin/python",
-      "args": ["${workspaceFolder}/../devin-context-guard-mcp/server.py"]
+      "command": "${workspaceFolder}/../devin-resource-guard-mcp/.venv/bin/python",
+      "args": ["${workspaceFolder}/../devin-resource-guard-mcp/server.py"]
     }
   }
 }
