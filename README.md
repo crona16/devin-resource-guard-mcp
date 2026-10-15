@@ -1,11 +1,13 @@
-# devin-context-guard-mcp
+# devin-resource-guard-mcp
 
-A small [Model Context Protocol](https://modelcontextprotocol.io) server that helps autonomous desktop agents stay within their limits. It does two things:
+An enterprise-grade Model Context Protocol (MCP) server engineered specifically for autonomous desktop agents like **Cognition's Devin**. It operates via `stdio` to solve the two biggest operational bottlenecks facing production-level autonomous engineering pipelines: **Context Bloating** and **Out-of-Memory (OOM) agent crashes**.
 
-- **Watches resource headroom.** It reports memory, CPU, and disk, and warns before the OOM killer or a cgroup limit ends the agent's process.
-- **Keeps context windows lean.** It finds dependency folders, build output, oversized logs, and binary artifacts that cost tokens without adding useful context, and returns exclude globs for them.
+### 🚀 High-Leverage Agent Orchestration Features
 
-It runs over **stdio** and works with any MCP-capable client, including Devin, Cursor, Claude Desktop, Claude Code, Windsurf, and VS Code.
+*   **Proactive Resource Guardrails:** Continuously profiles memory, CPU, and disk headroom. It reads `/sys/fs/cgroup` (v1/v2) inside containers to intercept and warn agents *before* they get terminated by the Linux OOM killer or cgroup memory limits.
+*   **Workspace Context Optimization:** Scans workspaces to dynamically identify token-heavy, low-value artifacts (e.g., massive log files, dependency trees, binary builds, lockfiles). It outputs real-time `exclude_globs` configurations that prevent agents from bleeding tokens and blowing past context windows.
+
+*Compatible out-of-the-box with Devin, Claude Desktop/Code, Cursor, and custom MCP clients.*
 
 ---
 
